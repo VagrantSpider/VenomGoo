@@ -16,18 +16,36 @@ import json
 import sys
 import time
 
+global DB_PATH; DB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),'payloads.sqlite3')
+global MSFRPC_PASSWORD; MSFRPC_PASSWORD = "VenomGoo"
+
+import psutil
+
+
 
 class VenomDb:
 	###### msfrpcd -P test -a 127.0.0.1
-	Client = MsfRpcClient('test', ssl=True)
+	try:
+		Client = MsfRpcClient(MSFRPC_PASSWORD, ssl=True)
+	except:
+		print("[-] msfrpcd does not appear to be running. Trying to start...")
+		os.system("msfrpcd -P %s -a 127.0.0.1" %MSFRPC_PASSWORD)
+		try:
+			time.sleep(5)
+			Client = MsfRpcClient(MSFRPC_PASSWORD, ssl=True)
+		except:
+			print("[-] Failed to start msfrpcd.")
+			exit()
+
 
 	def UpdateDB():
+
 
 		def DoPayloads():
 			# payloads
 			print("\n[+] Parsing msfvenom payloads ...")
 			# os.system("msfvenom --list payloads |grep '/'> /tmp/payloads.txt")
-			con = sqlite3.connect('db.sqlite3')
+			con = sqlite3.connect(DB_PATH)
 			cur = con.cursor()
 			sql = "CREATE TABLE payloads (p_path text PRIMARY KEY,p_arch text,p_platform text,p_staged text, p_function text,p_con_type text,p_description text,p_opts text)"
 			cur.execute(sql)
@@ -99,7 +117,7 @@ class VenomDb:
 
 
 	def GetPlatformsAll():
-		con = sqlite3.connect('db.sqlite3')
+		con = sqlite3.connect(DB_PATH)
 		cur = con.cursor()
 		sql = "SELECT DISTINCT p_platform from payloads"
 		cur.execute(sql)
@@ -112,7 +130,7 @@ class VenomDb:
 		return tmplist
 
 	def GetArchsAll():
-		con = sqlite3.connect('db.sqlite3')
+		con = sqlite3.connect(DB_PATH)
 		cur = con.cursor()
 		sql = "SELECT DISTINCT p_arch from payloads"
 		cur.execute(sql)
@@ -125,7 +143,7 @@ class VenomDb:
 		return tmplist
 
 	def GetFunctionsAll():
-		con = sqlite3.connect('db.sqlite3')
+		con = sqlite3.connect(DB_PATH)
 		cur = con.cursor()
 		sql = "SELECT DISTINCT p_function from payloads"
 		cur.execute(sql)
@@ -134,7 +152,7 @@ class VenomDb:
 		return result
 
 	def GetPayloadDesc(path):
-		con = sqlite3.connect('db.sqlite3')
+		con = sqlite3.connect(DB_PATH)
 		cur = con.cursor()
 		sql = "SELECT p_description from payloads WHERE p_path = ?"
 		cur.execute(sql,(path,))
@@ -142,7 +160,7 @@ class VenomDb:
 		return result
 
 	def GetPayloadOptions(path):
-		con = sqlite3.connect('db.sqlite3')
+		con = sqlite3.connect(DB_PATH)
 		cur = con.cursor()
 		sql = "SELECT p_opts from payloads WHERE p_path = ?"
 		cur.execute(sql,(path,))
@@ -150,7 +168,7 @@ class VenomDb:
 		return result
 
 	def GetPayloadPaths(archfilter=None,platformfilter=None,stagedfilter=None,functionfilter=None,confilter=None):
-		con = sqlite3.connect('db.sqlite3')
+		con = sqlite3.connect(DB_PATH)
 		cur = con.cursor()
 		qArgs = []
 		hasWhere = False
@@ -701,14 +719,16 @@ class OutputWin:
 
 
 def main():
+
 	app = MainWin(root)
 	root.mainloop()
 
 
+
 root = Tk()
 
-
 if __name__ == '__main__':
+
 	main()
 
 ##### msfrpcd -P test -a 127.0.0.1
