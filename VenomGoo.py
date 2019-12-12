@@ -19,9 +19,6 @@ import time
 global DB_PATH; DB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),'payloads.sqlite3')
 global MSFRPC_PASSWORD; MSFRPC_PASSWORD = "VenomGoo"
 
-import psutil
-
-
 
 class VenomDb:
 	###### msfrpcd -P test -a 127.0.0.1
@@ -40,7 +37,6 @@ class VenomDb:
 
 	def UpdateDB():
 
-
 		def DoPayloads():
 			# payloads
 			print("\n[+] Parsing msfvenom payloads ...")
@@ -49,8 +45,6 @@ class VenomDb:
 			cur = con.cursor()
 			sql = "CREATE TABLE payloads (p_path text PRIMARY KEY,p_arch text,p_platform text,p_staged text, p_function text,p_con_type text,p_description text,p_opts text)"
 			cur.execute(sql)
-
-
 
 			payloads = VenomDb.Client.modules.payloads
 
@@ -111,10 +105,7 @@ class VenomDb:
 		else:
 			tmplist = VenomDb.Client.call('module.transform_formats')
 
-
 		return tmplist
-
-
 
 	def GetPlatformsAll():
 		con = sqlite3.connect(DB_PATH)
