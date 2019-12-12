@@ -7,6 +7,7 @@ from tkinter import filedialog
 from tkinter import simpledialog
 from tkinter.scrolledtext import ScrolledText
 from pymetasploit3.msfrpc import MsfRpcClient
+import netifaces as ni
 
 import sqlite3
 import os
@@ -213,6 +214,8 @@ class MainWin:
 	def __init__(self, master):
 		self.Venom = VenomDb
 		self.ShowAdvanced = IntVar()
+		self.SetLhost = IntVar()
+		self.SetLhost.set(1)
 		self.FormatType = IntVar()
 		self.FormatType.set(1)
 		self.OutputType = IntVar()
@@ -224,6 +227,7 @@ class MainWin:
 		self.TemplateKeep = IntVar()
 		self.TemplateKeep.set(0)
 		self.PayloadSelection = StringVar()
+		self.SearchTerm = StringVar()
 
 		self.master = master
 		self.master.title("VenomGoo")
@@ -267,6 +271,13 @@ class MainWin:
 		self.cbstaged.current(0)
 		self.cbstaged.bind("<<ComboboxSelected>>", self.UpdatePayloadList)
 
+		self.lblsearch = Label(self.framefilter,text="Search:")
+		self.lblsearch.grid(row=2,column=2)
+		self.txtsearch = Entry(self.framefilter,width=10,textvariable=self.SearchTerm)
+		self.txtsearch.bind("<KeyRelease>", self.UpdatePayloadList)
+
+		self.txtsearch.grid(row=2,column=3, padx=5,pady=5,sticky=EW)
+
 		self.framepayload = Frame(self.master, bd=1, relief=SOLID)
 		self.framepayload.grid(row = 1, column = 0,columnspan=4,sticky = NSEW, padx=5,pady=5)
 
@@ -291,9 +302,15 @@ class MainWin:
 		self.cbencoder.current(0)
 		self.lblenc_iters = Label(self.framevenomopts,text="Iters:")
 		self.lblenc_iters.grid(row=0,column=2)
-		self.txtenc_iter = Entry(self.framevenomopts,width=4)
+		self.txtenc_iter = Entry(self.framevenomopts,width=3)
 		self.txtenc_iter.insert(0, "1")
 		self.txtenc_iter.grid(row=0,column=3, padx=5,pady=5,sticky=W)
+
+		self.lblbadchar = Label(self.framevenomopts,text="Bad Chars:")
+		self.lblbadchar.grid(row=0,column=4,sticky=W)
+		self.txtbadchar = Entry(self.framevenomopts,width=15)
+		self.txtbadchar.insert(0, "\\x00")
+		self.txtbadchar.grid(row=0,column=5, padx=5,pady=5,sticky=W)
 
 		self.lblencrypt = Label(self.framevenomopts,text="Encrypter:")
 		self.lblencrypt.grid(row=1,column=0)
@@ -307,17 +324,17 @@ class MainWin:
 		self.txtenc_key.insert(0, "mykey")
 		self.txtenc_key.grid(row=1,column=3, padx=5,pady=5,sticky=W)
 
-		self.lblbadchar = Label(self.framevenomopts,text="Bad Chars:")
-		self.lblbadchar.grid(row=2,column=0)
-		self.txtbadchar = Entry(self.framevenomopts,width=20)
-		self.txtbadchar.insert(0, "\\x00")
-		self.txtbadchar.grid(row=2,column=1, padx=5,pady=5,sticky=W)
+		self.lblencryptiv = Label(self.framevenomopts,text="IV:")
+		self.lblencryptiv.grid(row=1,column=4,sticky=E)
+		self.txtenc_iv = Entry(self.framevenomopts,width=15)
+		self.txtenc_iv.insert(0, "myiv")
+		self.txtenc_iv.grid(row=1,column=5, padx=5,pady=5,sticky=W)
 
 		self.lblnopsled = Label(self.framevenomopts,text="NOP Sled:")
-		self.lblnopsled.grid(row=2,column=2)
+		self.lblnopsled.grid(row=2,column=0)
 		self.txtnopsled = Entry(self.framevenomopts,width=10)
 		self.txtnopsled.insert(0, "0")
-		self.txtnopsled.grid(row=2,column=3, padx=5,pady=5,sticky=W)
+		self.txtnopsled.grid(row=2,column=1, padx=5,pady=5,sticky=W)
 
 		self.framepayloadopts = Frame(self.master, bd=1, relief=SOLID)
 		self.framepayloadopts.grid(row = 2, column = 0,columnspan=8,sticky = NSEW, padx=5,pady=5)
@@ -325,17 +342,27 @@ class MainWin:
 		self.lblPayload = Label(self.framepayloadopts,text="Current Payload:")
 		self.lblPayload.grid(row=0,column=0,sticky=W)
 		self.msgPayload = Message(self.framepayloadopts,text="", relief=SOLID,width=500, justify=LEFT,anchor=W,textvariable=self.PayloadSelection)
-		self.msgPayload.grid(row=1,column=0,columnspan=4,padx=5,sticky=EW)
+		self.msgPayload.grid(row=1,column=0,columnspan=2,padx=5,sticky=EW)
+
+		self.chkadvanced = Checkbutton(self.framepayloadopts, text="Show Advanced", variable=self.ShowAdvanced,command=self.UpdatePayloadOptions)
+		self.chkadvanced.grid(row=1,column=2,sticky = NW)
+
+		self.chkadvanced = Checkbutton(self.framepayloadopts, text="Set LHOST", variable=self.SetLhost,command=self.UpdatePayloadOptions)
+		self.chkadvanced.grid(row=1,column=2,sticky = NE)
+		self.cblhost = ttk.Combobox(self.framepayloadopts,state='readonly',values= os.listdir('/sys/class/net/'))
+		self.cblhost.grid(row=1,column=3, padx=5,pady=5,sticky=W)
+		self.cblhost.current(0)
+		self.cblhost.bind("<<ComboboxSelected>>", self.UpdatePayloadOptions)
 
 		self.treeoptions = ttk.Treeview(self.framepayloadopts)
-		self.treeoptions.grid(row = 2, column = 0,columnspan=2,sticky = NSEW, padx=5,pady=5)
+		self.treeoptions.grid(row = 2, column = 0,columnspan=4,sticky = NSEW, padx=5,pady=5)
 		self.treeoptions.bind("<Double-1>", self.TreeOnDoubleClick)
 		self.treeoptions["columns"]=("#1","#2","#3","#4")
 
-		self.treeoptions.column("#0", width=200)
+		self.treeoptions.column("#0", width=250)
 		self.treeoptions.heading('#0', text='Option')
 
-		self.treeoptions.column("#1", width=75)
+		self.treeoptions.column("#1", width=100)
 		self.treeoptions.heading('#1', text='Value')
 
 		self.treeoptions.column("#2", width=35)
@@ -344,14 +371,11 @@ class MainWin:
 		self.treeoptions.column("#3", width=35)
 		self.treeoptions.heading('#3', text='Adv')
 
-		self.treeoptions.column("#4", width=400)
+		self.treeoptions.column("#4", width=550)
 		self.treeoptions.heading('#4', text='Description')
 
-		self.chkadvanced = Checkbutton(self.framepayloadopts, text="Show Advanced Options", variable=self.ShowAdvanced,command=self.UpdatePayloadOptions)
-		self.chkadvanced.grid(row=2,column=8,sticky = NW)
-
 		self.btngenerate = Button(self.framepayloadopts, text = 'Generate', command = self.Generate)
-		self.btngenerate.grid(row=2,column=8,sticky=SE,padx=5,pady=5)
+		self.btngenerate.grid(row=2,column=10,padx=5,pady=5)
 
 		self.frameoutput = Frame(self.master, bd=1, relief=SOLID)
 		self.frameoutput.grid(row = 1, column = 4,columnspan=4,sticky = NSEW, padx=5,pady=5)
@@ -423,7 +447,18 @@ class MainWin:
 			option_req = option['values'][1]
 			option_adv = option['values'][2]
 			option_desc = option['values'][3]
-			args += " %s='%s'" %(option_name,option_value)
+
+			if option_req ==  u'\u2713':
+				if option_value == '':
+					a = messagebox.showerror("Error", "Argument '%s' is required!" %option_name)
+					return
+				else:
+					args += " %s='%s'" %(option_name,option_value)
+			else:
+				if option_value != '':
+					args += " %s='%s'" %(option_name,option_value)
+
+			# args += " %s='%s'" %(option_name,option_value)
 
 
 		encoder = self.cbencoder.get()
@@ -441,8 +476,17 @@ class MainWin:
 
 		encrypter = self.cbencypter.get()
 		key = self.txtenc_key.get()
+
 		if encrypter != 'None':
-			args += " --encrypt '%s' --encrypt-key '%s'" %(encrypter,key)
+			if encrypter == 'aes256':
+				iv = self.txtenc_iv.get()
+				if len(iv) < 16:
+					messagebox.showerror("Error","Encrypter 'aes256' requires a 16 char IV.")
+					return
+				else:
+					args += " --encrypt '%s' --encrypt-key '%s' --encrypt-iv '%s'" %(encrypter,key,iv)
+			else:
+				args += " --encrypt '%s' --encrypt-key '%s'" %(encrypter,key)
 
 
 		nopsled = self.txtnopsled.get()
@@ -481,6 +525,8 @@ class MainWin:
 
 
 			newval = simpledialog.askstring('Set Option', "Enter a value for %s" %option_name,initialvalue=option_value)
+			if newval == None:
+				newval = option_value
 
 
 			self.treeoptions.item(curItem, text=option_name, values=(newval, option_req,option_adv,option_desc))
@@ -585,16 +631,17 @@ class MainWin:
 		except:
 			selection = self.PayloadSelection.get()
 
+		if not selection:
+			return
+
 		self.treeoptions.delete(*self.treeoptions.get_children())
 
 		metadata = self.Venom.Client.call('module.info', ['payload', selection])
 		opt_dict = metadata['options']
 		for opt in opt_dict:
-			# .values():
 			cur_opt = opt
 			cur_opt_dict = opt_dict[opt]
 
-			# print(cur_opt,cur_opt_dict)
 			if 'type' in cur_opt_dict.keys():
 				otype = opt_dict[opt]['type']
 			if 'required' in cur_opt_dict.keys():
@@ -611,7 +658,6 @@ class MainWin:
 			if self.ShowAdvanced.get() == 0 and oadvanced == True:
 				continue
 
-			# print(cur_opt,otype,orequired,oadvanced,odesc,odefault)
 			if orequired == True:
 				orequired = u'\u2713'
 			else:
@@ -621,6 +667,12 @@ class MainWin:
 			else:
 				oadvanced = ''
 
+			if self.SetLhost.get() == 1 and cur_opt == 'LHOST':
+				iface = self.cblhost.get()
+				try:
+					odefault = ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
+				except:
+					odefault = 'NO IP'
 
 
 			self.treeoptions.insert('', 'end', text=cur_opt,values=(odefault,orequired,oadvanced,odesc))
@@ -647,6 +699,17 @@ class MainWin:
 
 
 		paylist =  self.Venom.GetPayloadPaths(archfilter=arch,platformfilter=platform,confilter=connection,functionfilter=function,stagedfilter=staged)
+
+		searchword = self.SearchTerm.get()
+		if searchword is not '' and searchword is not None:
+			tmplist = []
+
+			for payload in paylist:
+				if searchword in payload[0]:
+					tmplist.append(payload)
+			paylist = tmplist
+
+
 		self.listpayload.delete(0,END)
 		self.listpayload.insert(0,*paylist)
 
@@ -700,7 +763,12 @@ class OutputWin:
 			print(std_err)
 
 		result += "\n"
-		result += std_out.decode("utf-8")
+		try:
+			result += std_out.decode("utf-8")
+		except:
+			result = result.rstrip('\n#')
+			result += "# [-] error decoding output, the following may be unreliable. if its a binary format you should be using an output file!!!!\n\n"
+			result += str(std_out).lstrip("b'").rstrip("'")
 
 		self.txtstdout.insert(END,result)
 
