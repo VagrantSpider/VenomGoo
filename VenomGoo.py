@@ -8,7 +8,6 @@ from tkinter import simpledialog
 from tkinter.scrolledtext import ScrolledText
 from pymetasploit3.msfrpc import MsfRpcClient
 import netifaces as ni
-
 import sqlite3
 import os
 import subprocess
@@ -34,7 +33,6 @@ class VenomDb:
 		except:
 			print("[-] Failed to start msfrpcd.")
 			exit()
-
 
 	def UpdateDB():
 
@@ -95,9 +93,6 @@ class VenomDb:
 
 		os.system('rm db.sqlite3')
 		DoPayloads()
-		# DoEncoders()
-		# DoFormats()
-		# DoEncrypts()
 
 	def GetFormats(typefilter='exec'): # exec or trans
 
@@ -206,9 +201,6 @@ class VenomDb:
 		result = cur.fetchall()
 		return result
 
-
-
-
 #########################################################################
 class MainWin:
 	def __init__(self, master):
@@ -231,7 +223,6 @@ class MainWin:
 
 		self.master = master
 		self.master.title("VenomGoo")
-
 
 		self.framefilter = Frame(self.master, bd=1, relief=SOLID)
 		self.framefilter.grid(row = 0, column = 0,columnspan=4,sticky = NSEW, padx=5,pady=5)
@@ -380,8 +371,6 @@ class MainWin:
 		self.frameoutput = Frame(self.master, bd=1, relief=SOLID)
 		self.frameoutput.grid(row = 1, column = 4,columnspan=4,sticky = NSEW, padx=5,pady=5)
 
-
-
 		self.radexec = Radiobutton(self.frameoutput, text="Executable Formats", variable=self.FormatType, value=1,command = self.UpdateFormats)
 		self.radexec.grid(row=0,column=0,sticky = W, padx=5,pady=5)
 		self.radtrans = Radiobutton(self.frameoutput, text="Transform Formats", variable=self.FormatType, value=2,command = self.UpdateFormats)
@@ -430,15 +419,12 @@ class MainWin:
 		self.chktemplatethread.grid(row=6,column=1,sticky = NW)
 		self.chktemplatethread.configure(state=DISABLED)
 
-
 		self.master.geometry("")
 		self.UpdatePayloadList()
 
 	def Generate(self,evntobj=None):
 		payload = self.PayloadSelection.get()
 		args = ''
-
-		# parse args
 
 		for item in self.treeoptions.get_children():
 			option = self.treeoptions.item(item)
@@ -457,9 +443,6 @@ class MainWin:
 			else:
 				if option_value != '':
 					args += " %s='%s'" %(option_name,option_value)
-
-			# args += " %s='%s'" %(option_name,option_value)
-
 
 		encoder = self.cbencoder.get()
 		iters = self.txtenc_iter.get()
@@ -511,8 +494,6 @@ class MainWin:
 		self.outwin = Toplevel(self.master)
 		self.outclass = OutputWin(self.outwin,cmd,self.OutputType)
 
-
-
 	def TreeOnDoubleClick(self,evntobj=None):
 		try:
 			curItem = self.treeoptions.focus()
@@ -523,14 +504,11 @@ class MainWin:
 			option_adv = option['values'][2]
 			option_desc = option['values'][3]
 
-
 			newval = simpledialog.askstring('Set Option', "Enter a value for %s" %option_name,initialvalue=option_value)
 			if newval == None:
 				newval = option_value
 
-
 			self.treeoptions.item(curItem, text=option_name, values=(newval, option_req,option_adv,option_desc))
-
 
 		except:
 			return
@@ -575,7 +553,7 @@ class MainWin:
 			self.btnoutfile.configure(state=NORMAL)
 
 	def OutfileDialog(self,evntobj=None):
-		file = filedialog.askopenfilename(initialdir = "/",title = "Select file")
+		file = filedialog.asksavefilename(initialdir = "/",title = "Select file")
 		self.OutputFile.set(file)
 
 	def TemplateDialog(self,evntobj=None):
@@ -591,13 +569,11 @@ class MainWin:
 		self.cbformat["values"] = tmplist
 		self.cbformat.current(0)
 
-
 	def UpdateEncoders(self,evntobj=None):
 		try:
 			selection = self.listpayload.get(self.listpayload.curselection())[0]
 		except:
 			selection = self.PayloadSelection.get()
-
 
 		if selection:
 			encoders = self.Venom.Client.call('module.encoders')
@@ -617,7 +593,6 @@ class MainWin:
 			selection = self.listpayload.get(self.listpayload.curselection())[0]
 		except:
 			selection = self.PayloadSelection.get()
-
 
 		if selection:
 			encrypters = self.Venom.Client.call('module.encryption_formats')
@@ -677,8 +652,6 @@ class MainWin:
 
 			self.treeoptions.insert('', 'end', text=cur_opt,values=(odefault,orequired,oadvanced,odesc))
 
-
-
 	def UpdatePayloadList(self,evntobj=None):
 		platform = self.cbplatform.get()
 		arch = self.cbarch.get()
@@ -697,7 +670,6 @@ class MainWin:
 		if staged == 'all':
 			staged = None
 
-
 		paylist =  self.Venom.GetPayloadPaths(archfilter=arch,platformfilter=platform,confilter=connection,functionfilter=function,stagedfilter=staged)
 
 		searchword = self.SearchTerm.get()
@@ -709,10 +681,8 @@ class MainWin:
 					tmplist.append(payload)
 			paylist = tmplist
 
-
 		self.listpayload.delete(0,END)
 		self.listpayload.insert(0,*paylist)
-
 
 class OutputWin:
 	def __init__(self, master,cmd,outputtype):
@@ -773,7 +743,6 @@ class OutputWin:
 		self.txtstdout.insert(END,result)
 
 
-
 #########################################################################
 
 
@@ -781,8 +750,6 @@ def main():
 
 	app = MainWin(root)
 	root.mainloop()
-
-
 
 root = Tk()
 
