@@ -553,7 +553,7 @@ class MainWin:
 			self.btnoutfile.configure(state=NORMAL)
 
 	def OutfileDialog(self,evntobj=None):
-		file = filedialog.asksaveasfilename(initialdir = "/",title = "Select file")
+		file = filedialog.asksaveasfilename(initialdir = "/",title = "Select file")#
 		self.OutputFile.set(file)
 
 	def TemplateDialog(self,evntobj=None):
